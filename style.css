@@ -30,7 +30,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 1em 0;
-  /* display: none; */
+  display: none;
 }
 
 #room-header-controls{
