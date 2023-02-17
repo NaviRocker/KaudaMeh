@@ -14,6 +14,8 @@ let audioTracks = {
 
 let rtcClient;
 
+let micMuted = true
+
 
 const initRtc = async () => {
   rtcClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -24,6 +26,7 @@ const initRtc = async () => {
   await rtcClient.join(appid, roomId, token, rtcUid)
 
   audioTracks.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+  audioTracks.localAudioTrack.setMuted(micMuted)
   await rtcClient.publish(audioTracks.localAudioTrack);
 
   let userWrapper = `<div class="speaker user-rtc-${rtcUid}" id="${rtcUid}"><p>${rtcUid}</p></div>`
@@ -35,16 +38,13 @@ const initRtc = async () => {
 
 let initVolumeIndicator = async () => {
 
-  //1
   AgoraRTC.setParameter('AUDIO_VOLUME_INDICATION_INTERVAL', 200);
   rtcClient.enableAudioVolumeIndicator();
   
-  //2
   rtcClient.on("volume-indicator", volumes => {
     volumes.forEach((volume) => {
       console.log(`UID ${volume.uid} Level ${volume.level}`);
 
-      //3
       try{
           let item = document.getElementsByClassName(`user-rtc-${volume.uid}`)[0]
 
@@ -56,7 +56,6 @@ let initVolumeIndicator = async () => {
       }catch(error){
         console.error(error)
       }
-
 
     });
   })
@@ -86,6 +85,18 @@ let handleUserLeft = async (user) => {
   document.getElementById(user.uid).remove()
 }
 
+let toggleMic = async (e) => {
+  if(micMuted){
+    e.target.src = 'icons/mic.svg'
+    e.target.style.backgroundColor = 'ivory'
+    micMuted = false
+  } else {
+    e.target.src = 'icons/mic-off.svg'
+    e.target.style.backgroundColor = 'indianred'
+    micMuted = true
+  }
+  audioTracks.localAudioTrack.setMuted(micMuted)
+}
 
 
 let lobbyForm = document.getElementById('form')
@@ -113,4 +124,5 @@ let leaveRoom = async () => {
 
 lobbyForm.addEventListener('submit', enterRoom)
 document.getElementById('leave-icon').addEventListener('click', leaveRoom)
+document.getElementById('mic-icon').addEventListener('click', toggleMic)
 
