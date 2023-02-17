@@ -21,8 +21,6 @@ const initRtc = async () => {
   rtcClient.on('user-published', handleUserPublished)
   rtcClient.on('user-left', handleUserLeft)
 
-
-
   await rtcClient.join(appid, roomId, token, rtcUid)
 
   audioTracks.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
@@ -32,7 +30,36 @@ const initRtc = async () => {
 
   document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
+  initVolumeIndicator()
+}
 
+let initVolumeIndicator = async () => {
+
+  //1
+  AgoraRTC.setParameter('AUDIO_VOLUME_INDICATION_INTERVAL', 200);
+  rtcClient.enableAudioVolumeIndicator();
+  
+  //2
+  rtcClient.on("volume-indicator", volumes => {
+    volumes.forEach((volume) => {
+      console.log(`UID ${volume.uid} Level ${volume.level}`);
+
+      //3
+      try{
+          let item = document.getElementsByClassName(`user-rtc-${volume.uid}`)[0]
+
+         if (volume.level >= 50){
+           item.style.borderColor = '#00ff00'
+         }else{
+           item.style.borderColor = "#fff"
+         }
+      }catch(error){
+        console.error(error)
+      }
+
+
+    });
+  })
 }
 
 let handleUserJoined = async (user) => {
@@ -42,6 +69,7 @@ let handleUserJoined = async (user) => {
 
   document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
+  
 }
 
 let handleUserPublished = async (user, mediaType) => {
@@ -57,6 +85,8 @@ let handleUserLeft = async (user) => {
   delete audioTracks.remoteAudioTracks[user.uid]
   document.getElementById(user.uid).remove()
 }
+
+
 
 let lobbyForm = document.getElementById('form')
 
@@ -83,3 +113,4 @@ let leaveRoom = async () => {
 
 lobbyForm.addEventListener('submit', enterRoom)
 document.getElementById('leave-icon').addEventListener('click', leaveRoom)
+
