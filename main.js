@@ -7,8 +7,17 @@ const token = null
 const rtcUid =  Math.floor(Math.random() * 2032)
 const rtmUid =  String(Math.floor(Math.random() * 2032))
 
+const getRoomId = () => {
+  const queryString = window.location.search;
+  const urlParams = new URLSearchParams(queryString);
 
-let roomId = "main"
+  if (urlParams.get('room')){
+    return urlParams.get('room').toLowerCase()
+  }
+}
+
+let roomId = getRoomId() || null
+document.getElementById('form').roomname.value = roomId
 
 let audioTracks = {
   localAudioTrack: null,
@@ -137,6 +146,9 @@ let lobbyForm = document.getElementById('form')
 
 const enterRoom = async (e) => {
   e.preventDefault()
+
+  roomId = e.target.roomname.value.toLowerCase();
+  window.history.replaceState(null, null, `?room=${roomId}`);
 
   let displayName = e.target.displayname.value
 
