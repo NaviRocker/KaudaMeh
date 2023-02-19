@@ -25,6 +25,7 @@ let initRtm = async (name) => {
   rtmClient = AgoraRTM.createInstance(appid)
   await rtmClient.login({'uid':rtmUid, 'token':token})
 
+  rtmClient.addOrUpdateLocalUserAttributes({'name':name, 'userRtcUid':rtcUid.toString()})
   channel = rtmClient.createChannel(roomId)
   await channel.join()
 
@@ -49,7 +50,7 @@ const initRtc = async () => {
   audioTracks.localAudioTrack.setMuted(micMuted)
   await rtcClient.publish(audioTracks.localAudioTrack);
 
-  // initVolumeIndicator()
+  initVolumeIndicator()
 }
 
 let initVolumeIndicator = async () => {
@@ -92,7 +93,9 @@ let handleUserLeft = async (user) => {
 }
 
 let handleMemberJoined = async (MemberId) => {
-  let userWrapper = `<div class="speaker user-rtc-${'---'}" id="${MemberId}"><p>${MemberId}</p></div>`
+  let {name, userRtcUid} = await rtmClient.getUserAttributesByKeys(MemberId, ['name', 'userRtcUid'])
+
+  let userWrapper = `<div class="speaker user-rtc-${userRtcUid}" id="${MemberId}"><p>${name}</p></div>`
 
   document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
@@ -107,7 +110,9 @@ let getChannelMembers = async () => {
   let members = await channel.getMembers()
 
   for(let i=0; members.length > i; i++){
-    let userWrapper = `<div class="speaker user-rtc-${'---'}" id="${members[i]}"><p>${members[i]}</p></div>`
+    let {name, userRtcUid} = await rtmClient.getUserAttributesByKeys(members[i], ['name', 'userRtcUid'])
+
+    let userWrapper = `<div class="speaker user-rtc-${userRtcUid}" id="${members[i]}"><p>${name}</p></div>`
     document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
 
@@ -133,7 +138,7 @@ let lobbyForm = document.getElementById('form')
 const enterRoom = async (e) => {
   e.preventDefault()
 
-  let displayName = ''
+  let displayName = e.target.displayname.value
 
   initRtc() 
   initRtm(displayName)
