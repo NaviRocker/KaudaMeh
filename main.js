@@ -28,12 +28,18 @@ let initRtm = async (name) => {
   channel = rtmClient.createChannel(roomId)
   await channel.join()
 
+  getChannelMembers()
+
+  channel.on('MemberJoined', handleMemberJoined)
+  channel.on('MemberLeft', handleMemberLeft)
+
+  window.addEventListener('beforeunload', leaveRtmChannel)
+
 }
 
 
 const initRtc = async () => {
   rtcClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-  // rtcClient.on('user-joined', handleUserJoined)
   rtcClient.on('user-published', handleUserPublished)
   rtcClient.on('user-left', handleUserLeft)
 
@@ -42,10 +48,6 @@ const initRtc = async () => {
   audioTracks.localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
   audioTracks.localAudioTrack.setMuted(micMuted)
   await rtcClient.publish(audioTracks.localAudioTrack);
-
-  // let userWrapper = `<div class="speaker user-rtc-${rtcUid}" id="${rtcUid}"><p>${rtcUid}</p></div>`
-
-  // document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
   // initVolumeIndicator()
 }
@@ -75,16 +77,6 @@ let initVolumeIndicator = async () => {
   })
 }
 
-// let handleUserJoined = async (user) => {
-  
-
-//   let userWrapper = `<div class="speaker user-rtc-${user.uid}" id="${user.uid}"><p>${user.uid}</p></div>`
-
-//   document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
-
-  
-// }
-
 let handleUserPublished = async (user, mediaType) => {
   await rtcClient.subscribe(user, mediaType)
 
@@ -97,6 +89,29 @@ let handleUserPublished = async (user, mediaType) => {
 let handleUserLeft = async (user) => {
   delete audioTracks.remoteAudioTracks[user.uid]
   // document.getElementById(user.uid).remove()
+}
+
+let handleMemberJoined = async (MemberId) => {
+  let userWrapper = `<div class="speaker user-rtc-${'---'}" id="${MemberId}"><p>${MemberId}</p></div>`
+
+  document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
+
+}
+
+let handleMemberLeft = async (MemberId) => {
+  document.getElementById(MemberId).remove()
+
+}
+
+let getChannelMembers = async () => {
+  let members = await channel.getMembers()
+
+  for(let i=0; members.length > i; i++){
+    let userWrapper = `<div class="speaker user-rtc-${'---'}" id="${members[i]}"><p>${members[i]}</p></div>`
+    document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
+
+
+  }
 }
 
 let toggleMic = async (e) => {
@@ -127,12 +142,20 @@ const enterRoom = async (e) => {
   document.getElementById('room-header').style.display = "flex"
 }
 
+let leaveRtmChannel = async () => {
+  await channel.leave()
+  await rtcClient.logout()
+
+}
+
 let leaveRoom = async () => {
   audioTracks.localAudioTrack.stop()
   audioTracks.localAudioTrack.close()
 
   rtcClient.unpublish()
   rtcClient.leave()
+
+  leaveRtmChannel()
 
   document.getElementById('form').style.display = 'block'
   document.getElementById('room-header').style.display = 'none'
