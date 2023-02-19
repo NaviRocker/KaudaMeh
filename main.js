@@ -28,13 +28,14 @@ let rtcClient;
 let rtmClient;
 let channel;
 
-let micMuted = true
+let micMuted = true;
+let avatar = null;
 
 let initRtm = async (name) => {
   rtmClient = AgoraRTM.createInstance(appid)
   await rtmClient.login({'uid':rtmUid, 'token':token})
 
-  rtmClient.addOrUpdateLocalUserAttributes({'name':name, 'userRtcUid':rtcUid.toString()})
+  rtmClient.addOrUpdateLocalUserAttributes({'name':name, 'userRtcUid':rtcUid.toString(), 'userAvatar':avatar})
   channel = rtmClient.createChannel(roomId)
   await channel.join()
 
@@ -72,12 +73,12 @@ let initVolumeIndicator = async () => {
       console.log(`UID ${volume.uid} Level ${volume.level}`);
 
       try{
-          let item = document.getElementsByClassName(`user-rtc-${volume.uid}`)[0]
+          let item = document.getElementsByClassName(`avatar-${volume.uid}`)[0]
 
          if (volume.level >= 50){
            item.style.borderColor = '#00ff00'
          }else{
-           item.style.borderColor = "#fff"
+           item.style.borderColor = "#ffffff"
          }
       }catch(error){
         console.error(error)
@@ -102,9 +103,11 @@ let handleUserLeft = async (user) => {
 }
 
 let handleMemberJoined = async (MemberId) => {
-  let {name, userRtcUid} = await rtmClient.getUserAttributesByKeys(MemberId, ['name', 'userRtcUid'])
+  let {name, userRtcUid, userAvatar} = await rtmClient.getUserAttributesByKeys(MemberId, ['name', 'userRtcUid', 'userAvatar'])
 
-  let userWrapper = `<div class="speaker user-rtc-${userRtcUid}" id="${MemberId}"><p>${name}</p></div>`
+  let userWrapper = `<div class="speaker user-rtc-${userRtcUid}" id="${MemberId}">
+  <img class="user-avatar avatar-${userRtcUid}" src="${userAvatar}"/>
+  <p>${name}</p></div>`
 
   document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
@@ -119,9 +122,11 @@ let getChannelMembers = async () => {
   let members = await channel.getMembers()
 
   for(let i=0; members.length > i; i++){
-    let {name, userRtcUid} = await rtmClient.getUserAttributesByKeys(members[i], ['name', 'userRtcUid'])
+    let {name, userRtcUid, userAvatar} = await rtmClient.getUserAttributesByKeys(members[i], ['name', 'userRtcUid', 'userAvatar'])
 
-    let userWrapper = `<div class="speaker user-rtc-${userRtcUid}" id="${members[i]}"><p>${name}</p></div>`
+    let userWrapper = `<div class="speaker user-rtc-${userRtcUid}" id="${members[i]}">
+    <img class="user-avatar avatar-${userRtcUid}" src="${userAvatar}"/>
+    <p>${name}</p></div>`
     document.getElementById('members').insertAdjacentHTML('beforeend', userWrapper)
 
 
@@ -147,6 +152,11 @@ let lobbyForm = document.getElementById('form')
 const enterRoom = async (e) => {
   e.preventDefault()
 
+  if (!avatar){
+    alert('Please select an avatar')
+    return
+  }
+
   roomId = e.target.roomname.value.toLowerCase();
   window.history.replaceState(null, null, `?room=${roomId}`);
 
@@ -157,6 +167,7 @@ const enterRoom = async (e) => {
 
   lobbyForm.style.display = 'none'
   document.getElementById('room-header').style.display = "flex"
+  document.getElementById('room-name').innerText = roomId
 }
 
 let leaveRtmChannel = async () => {
@@ -183,4 +194,20 @@ let leaveRoom = async () => {
 lobbyForm.addEventListener('submit', enterRoom)
 document.getElementById('leave-icon').addEventListener('click', leaveRoom)
 document.getElementById('mic-icon').addEventListener('click', toggleMic)
+
+const avatars = document.getElementsByClassName('avatar-selection')
+
+for (let i=0; avatars.length > i; i++){
+  
+  avatars[i].addEventListener('click', ()=> {
+    for (let i=0; avatars.length > i; i++){
+      avatars[i].style.borderColor = "#fff"
+      avatars[i].style.opacity = .5
+    }
+
+      avatar = avatars[i].src
+      avatars[i].style.borderColor = "#00ff00"
+      avatars[i].style.opacity = 1
+  })
+}
 
