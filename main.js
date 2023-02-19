@@ -21,6 +21,15 @@ let channel;
 
 let micMuted = true
 
+let initRtm = async (name) => {
+  rtmClient = AgoraRTM.createInstance(appid)
+  await rtmClient.login({'uid':rtmUid, 'token':token})
+
+  channel = rtmClient.createChannel(roomId)
+  await channel.join()
+
+}
+
 
 const initRtc = async () => {
   rtcClient = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
@@ -108,7 +117,11 @@ let lobbyForm = document.getElementById('form')
 
 const enterRoom = async (e) => {
   e.preventDefault()
+
+  let displayName = ''
+
   initRtc() 
+  initRtm(displayName)
 
   lobbyForm.style.display = 'none'
   document.getElementById('room-header').style.display = "flex"
